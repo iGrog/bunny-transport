@@ -8,6 +8,8 @@ use Bunny\Message;
 use Telephantast\MessageBus\Async\Consumer;
 use Telephantast\MessageBus\Async\ObjectDenormalizer;
 use Telephantast\MessageBus\Async\TransportConsume;
+
+use function dump;
 use function React\Async\await;
 
 /**
@@ -15,7 +17,7 @@ use function React\Async\await;
  */
 final class BunnyConsume implements TransportConsume
 {
-    private const DEFAULT_PREFETCH_COUNT = 50;
+    private const DEFAULT_PREFETCH_COUNT = 1;
 
     private BunnyMessageDecoder $messageDecoder;
 
@@ -39,18 +41,20 @@ final class BunnyConsume implements TransportConsume
      */
     public function runConsumer(Consumer $consumer): void
     {
-        $channel = await($this->connectionPool->get()->channel());
-        await($channel->qos(prefetchCount: $this->prefetchCount));
-        $consumerTag = await($channel->consume(
-            callback: function (Message $message) use ($channel, $consumer): void {
+        $channel = $this->connectionPool->get()->channel();
+        $channel->qos(prefetchCount: $this->prefetchCount);
+        $consumerTag = $channel->consume(
+            callback: function (Message $message) use ($channel, $consumer): void
+            {
                 $consumer->handle($this->messageDecoder->decode($message));
-                await($channel->ack($message));
+                $channel->ack($message);
             },
             queue: $consumer->queue,
-        ))->consumerTag;
+        )->consumerTag;
+
         $this->consumerToCancel[$consumer] = static function () use ($channel, $consumerTag): void {
-            await($channel->cancel($consumerTag));
-            await($channel->close());
+            $channel->cancel($consumerTag);
+            $channel->close();
         };
     }
 
