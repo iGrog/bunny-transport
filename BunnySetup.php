@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Telephantast\BunnyTransport;
 
-use App\Infrastructure\MessageBus\Async\BunnyConnectionPool;
 use Telephantast\MessageBus\Async\TransportSetup;
 use function React\Async\await;
 
