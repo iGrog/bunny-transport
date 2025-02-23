@@ -4,21 +4,13 @@ declare(strict_types=1);
 
 namespace Telephantast\BunnyTransport;
 
-use Bunny\Async\Client;
-use React\EventLoop\Loop;
-use React\Promise\PromiseInterface;
-use function React\Async\await;
+use Bunny\Client;
 
 /**
  * @api
  */
 final class BunnyConnectionPool
 {
-    /**
-     * @var null|Client|PromiseInterface<Client>
-     */
-    private null|Client|PromiseInterface $client = null;
-
     public function __construct(
         private readonly string $host = 'localhost',
         private readonly int $port = 5672,
@@ -31,25 +23,18 @@ final class BunnyConnectionPool
     /**
      * @psalm-suppress MissingThrowsDocblock
      */
-    public function get(): Client
+    public function get(): \Bunny\Client
     {
-        if ($this->client instanceof Client && $this->client->isConnected()) {
-            return $this->client;
-        }
+        $client = new Client([
+            'host' => $this->host,
+            'port' => $this->port,
+            'user' => $this->user,
+            'password' => $this->password,
+            'vhost' => $this->vhost,
+            'heartbeat' => $this->heartbeatSeconds,
+        ]);
 
-        if (!$this->client instanceof PromiseInterface) {
-            $client = new Client(Loop::get(), [
-                'host' => $this->host,
-                'port' => $this->port,
-                'user' => $this->user,
-                'password' => $this->password,
-                'vhost' => $this->vhost,
-                'heartbeat' => $this->heartbeatSeconds,
-            ]);
-            $this->client = $client->connect()->then(fn(): Client => $this->client = $client);
-        }
-
-        return await($this->client);
+        return $client;
     }
 
     /**
@@ -57,17 +42,10 @@ final class BunnyConnectionPool
      */
     public function disconnect(): void
     {
-        if ($this->client === null) {
-            return;
-        }
+    }
 
-        $clientToDisconnect = $this->client;
-        $this->client = null;
-
-        if ($clientToDisconnect instanceof PromiseInterface) {
-            $clientToDisconnect = await($clientToDisconnect);
-        }
-
-        await($clientToDisconnect->disconnect());
+    public function __destruct()
+    {
+        $this->disconnect();
     }
 }

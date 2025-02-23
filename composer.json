@@ -9,6 +9,7 @@
             "email": "udaltsov.valentin@gmail.com"
         }
     ],
+    "minimum-stability": "dev",
     "require": {
         "php": "^8.3",
         "ext-pdo": "*",

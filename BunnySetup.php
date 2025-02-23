@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Telephantast\BunnyTransport;
 
+use App\Infrastructure\MessageBus\Async\BunnyConnectionPool;
 use Telephantast\MessageBus\Async\TransportSetup;
 use function React\Async\await;
 
@@ -21,19 +22,19 @@ final readonly class BunnySetup implements TransportSetup
      */
     public function setup(array $exchangeToQueues): void
     {
-        $channel = await($this->connectionPool->get()->channel());
+        $client = $this->connectionPool->get();
+        $channel = $client->channel();
 
-        foreach ($exchangeToQueues as $exchange => $queues) {
-            await($channel->exchangeDeclare($exchange, 'x-delayed-message', durable: true, arguments: [
-                'x-delayed-type' => 'fanout',
-            ]));
+        foreach ($exchangeToQueues as $exchange => $queues)
+        {
+            $channel->exchangeDeclare($exchange, 'fanout', durable: true);
 
-            foreach ($queues as $queue) {
-                await($channel->queueDeclare($queue, durable: true));
-                await($channel->queueBind($queue, $exchange));
+            foreach ($queues as $queue)
+            {
+                $channel->queueDeclare($queue, durable: true);
+                $channel->queueBind($exchange, $queue);
             }
         }
-
-        await($channel->close());
+        $channel->close();
     }
 }
