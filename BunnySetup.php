@@ -35,5 +35,6 @@ final readonly class BunnySetup implements TransportSetup
             }
         }
         $channel->close();
+        $client->disconnect();
     }
 }
