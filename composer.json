@@ -15,7 +15,7 @@
         "ext-pdo": "*",
         "react/async": "^4.2",
         "react/event-loop": "^1.5",
-        "react/promise": "^2.11",
+        "react/promise": "^3.2",
         "telephantast/message-bus": "^0.1@dev"
     },
     "autoload": {
